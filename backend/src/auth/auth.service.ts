@@ -1,13 +1,14 @@
-import { ConflictException, Injectable, UnprocessableEntityException } from '@nestjs/common'
+import { Injectable, UnprocessableEntityException } from '@nestjs/common'
 import { HashingService } from 'src/shared/services/hashing.service'
 import { RoleService } from './role.service'
 import { generateOTP, isUniqueConstraintPrismaError } from 'src/shared/helpers'
 import { RegisterBodyType, SendOPTBodyType } from './auth.model'
 import { AuthRepository } from './auth.repo'
 import { SharedUserRepository } from 'src/shared/repositories/shared-user.repo'
-import { addMilliseconds, milliseconds } from 'date-fns'
+import { addMilliseconds } from 'date-fns'
 import ms from 'ms'
 import envConfig from 'src/shared/config'
+import { TypeOfVerificationCode } from 'src/shared/constants/auth.constant'
 
 @Injectable()
 export class AuthService {
@@ -20,6 +21,30 @@ export class AuthService {
 
 	async register(body: RegisterBodyType) {
 		try {
+			const verificationCode = await this.authRepository.findUniqueVerificationCode({
+				email: body.email,
+				code: body.code,
+				type: TypeOfVerificationCode.REGISTER,
+			})
+
+			if (!verificationCode) {
+				throw new UnprocessableEntityException([
+					{
+						message: 'Mã OTP không tồn tại',
+						path: 'code',
+					},
+				])
+			}
+			console.log('expires', verificationCode.expiresAt.toISOString())
+			console.log('now', new Date().toISOString())
+			if (verificationCode.expiresAt < new Date()) {
+				throw new UnprocessableEntityException([
+					{
+						message: 'Mã OTP đã hết hạn',
+						path: 'code',
+					},
+				])
+			}
 			const clientRoleId = await this.roleService.getRoleId()
 			const hashPassword = await this.hashingService.hash(body.password)
 			return await this.authRepository.createUser({
@@ -58,11 +83,12 @@ export class AuthService {
 		}
 		// Tại mã OTP
 		const code = generateOTP()
+		const expiresAt = addMilliseconds(new Date(), ms(envConfig.OTP_EXPIRES_IN))
 		const verificationCode = await this.authRepository.createVerificationCode({
 			email: body.email,
 			type: body.type,
 			code,
-			expiresAt: addMilliseconds(new Date(), ms(envConfig.OTP_EXPIRES_IN)),
+			expiresAt,
 		})
 		return verificationCode
 	}
