@@ -9,6 +9,7 @@ import { addMilliseconds } from 'date-fns'
 import ms from 'ms'
 import envConfig from 'src/shared/config'
 import { TypeOfVerificationCode } from 'src/shared/constants/auth.constant'
+import { EmailService } from 'src/shared/services/email.service'
 
 @Injectable()
 export class AuthService {
@@ -17,6 +18,7 @@ export class AuthService {
 		private readonly roleService: RoleService,
 		private readonly authRepository: AuthRepository,
 		private readonly sharedUserRepository: SharedUserRepository,
+		private readonly emailService: EmailService,
 	) {}
 
 	async register(body: RegisterBodyType) {
@@ -35,8 +37,6 @@ export class AuthService {
 					},
 				])
 			}
-			console.log('expires', verificationCode.expiresAt.toISOString())
-			console.log('now', new Date().toISOString())
 			if (verificationCode.expiresAt < new Date()) {
 				throw new UnprocessableEntityException([
 					{
@@ -90,6 +90,15 @@ export class AuthService {
 			code,
 			expiresAt,
 		})
+		const { error } = await this.emailService.sendOTP({ email: body.email, code })
+		if (error) {
+			throw new UnprocessableEntityException([
+				{
+					message: 'Send OTP false',
+					path: 'code',
+				},
+			])
+		}
 		return verificationCode
 	}
 }
