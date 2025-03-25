@@ -1,8 +1,8 @@
-import { Injectable, UnauthorizedException, UnprocessableEntityException } from '@nestjs/common'
+import { HttpException, Injectable, UnauthorizedException, UnprocessableEntityException } from '@nestjs/common'
 import { HashingService } from 'src/shared/services/hashing.service'
 import { RoleService } from './role.service'
 import { generateOTP, isNotFoundPrismaError, isUniqueConstraintPrismaError } from 'src/shared/helpers'
-import { LoginBodyType, RefreshTokenBodyType, RegisterBodyType, SendOPTBodyType } from './auth.model'
+import { LoginBodyType, LogoutBodyType, RefreshTokenBodyType, RegisterBodyType, SendOPTBodyType } from './auth.model'
 import { AuthRepository } from './auth.repo'
 import { SharedUserRepository } from 'src/shared/repositories/shared-user.repo'
 import { addMilliseconds } from 'date-fns'
@@ -186,10 +186,25 @@ export class AuthService {
 			const [, , tokens] = await Promise.all([$updateDevice, $deleteRefreshToken, $generateToken])
 			return tokens
 		} catch (error) {
-			if (isNotFoundPrismaError(error)) {
-				throw new UnauthorizedException('Invalid refresh token 1')
+			console.log(error)
+			if (error instanceof HttpException) {
+				throw error
 			}
-			throw new UnauthorizedException('Invalid refresh token')
+			throw new UnauthorizedException()
+		}
+	}
+
+	async logout({ refreshToken }: LogoutBodyType) {
+		// Check refreshToken is verify?
+		await this.tokenService.verifyRefreshToken(refreshToken)
+		// Delete refreshToken
+		const { deviceId } = await this.authRepository.deleteRefreshToken(refreshToken)
+		// Update device
+		await this.authRepository.updateDevice(deviceId, {
+			isActive: false,
+		})
+		return {
+			message: 'Logout successfully',
 		}
 	}
 }
