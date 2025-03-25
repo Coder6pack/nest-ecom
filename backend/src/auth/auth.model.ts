@@ -57,7 +57,7 @@ export const RefreshTokenBodySchema = z
 	})
 	.strict()
 
-export const RefreshTokenResSchema = LoginBodySchema
+export const RefreshTokenResSchema = LoginResSchema
 
 export const DeviceSchema = z.object({
 	id: z.number(),

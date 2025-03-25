@@ -73,4 +73,38 @@ export class AuthRepository {
 			data,
 		})
 	}
+
+	findUniqueRefreshTokenINcludeUserRole(
+		refreshToken: string,
+	): Promise<(RefreshTokenType & { user: UserType & { role: RoleType } }) | null> {
+		return this.prismaService.refreshToken.findUnique({
+			where: {
+				token: refreshToken,
+			},
+			include: {
+				user: {
+					include: {
+						role: true,
+					},
+				},
+			},
+		})
+	}
+
+	updateDevice(deviceId: number, data: Partial<DeviceType>): Promise<DeviceType> {
+		return this.prismaService.device.update({
+			where: {
+				id: deviceId,
+			},
+			data,
+		})
+	}
+
+	deleteRefreshToken(token: string) {
+		return this.prismaService.refreshToken.delete({
+			where: {
+				token,
+			},
+		})
+	}
 }

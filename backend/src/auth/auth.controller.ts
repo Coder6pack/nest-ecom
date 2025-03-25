@@ -1,14 +1,24 @@
 import { Body, Controller, Ip, Post } from '@nestjs/common'
 import { AuthService } from './auth.service'
-import { LoginBodyDTO, RegisterBodyDTO, SendOTPBodyDTO } from './auth.dto'
+import {
+	LoginBodyDTO,
+	LoginResDTO,
+	RefreshTokenBodyDTO,
+	RefreshTokenResDTO,
+	RegisterBodyDTO,
+	RegisterResDTO,
+	SendOTPBodyDTO,
+} from './auth.dto'
 import { UserAgent } from 'src/shared/decorators/user-agent.decorator'
+import { ZodSerializerDto } from 'nestjs-zod'
 
 @Controller('auth')
 export class AuthController {
 	constructor(private readonly authService: AuthService) {}
 
 	@Post('register')
-	async register(@Body() body: RegisterBodyDTO) {
+	@ZodSerializerDto(RegisterResDTO)
+	register(@Body() body: RegisterBodyDTO) {
 		return this.authService.register(body)
 	}
 
@@ -18,9 +28,20 @@ export class AuthController {
 	}
 
 	@Post('login')
+	@ZodSerializerDto(LoginResDTO)
 	login(@Body() body: LoginBodyDTO, @Ip() ip: string, @UserAgent() userAgent: string) {
 		return this.authService.login({
 			...body,
+			ip,
+			userAgent,
+		})
+	}
+
+	@Post('refresh-token')
+	@ZodSerializerDto(RefreshTokenResDTO)
+	refreshToken(@Body() body: RefreshTokenBodyDTO, @Ip() ip: string, @UserAgent() userAgent: string) {
+		return this.authService.refreshToken({
+			refreshToken: body.refreshToken,
 			ip,
 			userAgent,
 		})
