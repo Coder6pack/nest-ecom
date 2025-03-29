@@ -27,6 +27,10 @@ const configSchema = z.object({
 	ADMIN_PHONE_NUMBER: z.string(),
 	OTP_EXPIRES_IN: z.string(),
 	RESEND_OTP_API_KEY_SECRET: z.string(),
+	GOOGLE_OAUTH_CLIENT_ID: z.string(),
+	GOOGLE_OAUTH_CLIENT_SECRET: z.string(),
+	GOOGLE_OATH_REDIRECT_URI: z.string(),
+	GOOGLE_OAUTH_REDIRECT_CLIENT: z.string(),
 })
 const configServer = configSchema.safeParse(process.env)
 

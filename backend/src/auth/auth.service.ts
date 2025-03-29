@@ -102,7 +102,7 @@ export class AuthService {
 				},
 			])
 		}
-		return verificationCode
+		return { message: 'Send OTP successfully' }
 	}
 
 	async generateTokens({ userId, deviceId, roleId, roleName }: AccessTokenPayloadCreate) {
