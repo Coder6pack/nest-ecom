@@ -1,8 +1,7 @@
-import { Injectable } from '@nestjs/common'
 import { google } from 'googleapis'
 import envConfig from 'src/shared/config'
+import { Injectable } from '@nestjs/common'
 import { OAuth2Client } from 'google-auth-library'
-
 @Injectable()
 export class GoogleService {
 	private oauth2Client: OAuth2Client
