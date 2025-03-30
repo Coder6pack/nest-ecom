@@ -90,7 +90,16 @@ export const RefreshTokenSchema = z.object({
 })
 
 export const LogoutBodySchema = RefreshTokenBodySchema
+export const GetAuthorizationBodySchema = DeviceSchema.pick({
+	userAgent: true,
+	ip: true,
+})
+export const GetAuthorizationResSchema = z.object({
+	url: z.string().url(),
+})
 
+export type GetAuthorizationResType = z.infer<typeof GetAuthorizationResSchema>
+export type GetAuthorizationBodyType = z.infer<typeof GetAuthorizationBodySchema>
 export type LogoutBodyType = RefreshTokenBodyType
 export type RefreshTokenType = z.infer<typeof RefreshTokenSchema>
 export type RoleType = z.infer<typeof RoleSchema>
