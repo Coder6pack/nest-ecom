@@ -9,6 +9,7 @@ import { AuthService } from './auth.service'
 import { TokenService } from 'src/shared/services/token.service'
 import { RoleService } from './role.service'
 import { v4 as uuidV4 } from 'uuid'
+import { GoogleUserInfoError } from './error.model'
 @Injectable()
 export class GoogleService {
 	private oauth2Client: OAuth2Client
@@ -69,7 +70,7 @@ export class GoogleService {
 			// Lấy thông tin người dùng từ Google
 			const { data } = await oauth2.userinfo.get()
 			if (!data.email) {
-				throw new Error('Lỗi khi xác thực bằng google - Không có email')
+				throw GoogleUserInfoError
 			}
 			let user = await this.authRepository.findUniqueIncludeRole({
 				email: data.email,

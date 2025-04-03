@@ -89,6 +89,25 @@ export const RefreshTokenSchema = z.object({
 	createdAt: z.date(),
 })
 
+export const ForgotPasswordBodySchema = z
+	.object({
+		email: z.string().email(),
+		code: z.string().length(6),
+		newPassword: z.string().min(6).max(255),
+		confirmPassword: z.string().min(6).max(255),
+	})
+	.strict()
+	.superRefine(({ confirmPassword, newPassword }, ctx) => {
+		if (confirmPassword !== newPassword) {
+			ctx.addIssue({
+				message: 'Password and Confirm Password do not match',
+				code: 'custom',
+				path: ['confirmPassword'],
+			})
+		}
+	})
+
+export type ForgotPasswordBodyType = z.infer<typeof ForgotPasswordBodySchema>
 export const LogoutBodySchema = RefreshTokenBodySchema
 export const GetAuthorizationBodySchema = DeviceSchema.pick({
 	userAgent: true,

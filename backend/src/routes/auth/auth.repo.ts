@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common'
 import { PrismaService } from 'src/shared/services/prisma.service'
-import { DeviceType, RefreshTokenType, RegisterBodyType, RoleType, VerifiCationCodeType } from './auth.model'
+import { DeviceType, RefreshTokenType, RoleType, VerifiCationCodeType } from './auth.model'
 import { UserType } from 'src/shared/models/shared-user.model'
 import { TypeOfVerificationCodeType } from 'src/shared/constants/auth.constant'
 
@@ -33,7 +33,6 @@ export class AuthRepository {
 	async createVerificationCode(
 		payload: Pick<VerifiCationCodeType, 'email' | 'code' | 'type' | 'expiresAt'>,
 	): Promise<VerifiCationCodeType> {
-		console.log('payload', payload)
 		return this.prismaService.verificationCode.upsert({
 			where: {
 				email: payload.email,
@@ -42,6 +41,7 @@ export class AuthRepository {
 			update: {
 				code: payload.code,
 				expiresAt: payload.expiresAt,
+				type: payload.type,
 			},
 		})
 	}
@@ -116,6 +116,28 @@ export class AuthRepository {
 			where: {
 				token,
 			},
+		})
+	}
+
+	updateUser(where: { id: number } | { email: string }, data: Partial<UserType>): Promise<UserType> {
+		return this.prismaService.user.update({
+			where,
+			data,
+		})
+	}
+
+	deleteVerificationCode(
+		where:
+			| { email: string }
+			| { id: number }
+			| {
+					email: string
+					code: string
+					type: TypeOfVerificationCodeType
+			  },
+	): Promise<VerifiCationCodeType> {
+		return this.prismaService.verificationCode.delete({
+			where,
 		})
 	}
 }

@@ -2,18 +2,26 @@ import { HttpException, Injectable } from '@nestjs/common'
 import { HashingService } from 'src/shared/services/hashing.service'
 import { RoleService } from './role.service'
 import { generateOTP, isUniqueConstraintPrismaError } from 'src/shared/helpers'
-import { LoginBodyType, LogoutBodyType, RefreshTokenBodyType, RegisterBodyType, SendOPTBodyType } from './auth.model'
+import {
+	ForgotPasswordBodyType,
+	LoginBodyType,
+	LogoutBodyType,
+	RefreshTokenBodyType,
+	RegisterBodyType,
+	SendOPTBodyType,
+} from './auth.model'
 import { AuthRepository } from './auth.repo'
 import { SharedUserRepository } from 'src/shared/repositories/shared-user.repo'
 import { addMilliseconds } from 'date-fns'
 import ms from 'ms'
 import envConfig from 'src/shared/config'
-import { TypeOfVerificationCode } from 'src/shared/constants/auth.constant'
+import { TypeOfVerificationCode, TypeOfVerificationCodeType } from 'src/shared/constants/auth.constant'
 import { EmailService } from 'src/shared/services/email.service'
 import { TokenService } from 'src/shared/services/token.service'
 import { AccessTokenPayloadCreate } from 'src/shared/types/token.type'
 import {
 	EmailAlreadyExistsException,
+	EmailNotFoundException,
 	FailedToSendOTPException,
 	InvalidOTPException,
 	InvalidPasswordException,
@@ -33,29 +41,50 @@ export class AuthService {
 		private readonly tokenService: TokenService,
 	) {}
 
+	async validateVerificationCode({
+		email,
+		code,
+		type,
+	}: {
+		email: string
+		code: string
+		type: TypeOfVerificationCodeType
+	}) {
+		const verificationCode = await this.authRepository.findUniqueVerificationCode({
+			email,
+			code,
+			type,
+		})
+		if (!verificationCode) {
+			throw InvalidOTPException
+		}
+		if (verificationCode.expiresAt < new Date()) {
+			throw OTPExpiredException
+		}
+		return verificationCode
+	}
+
 	async register(body: RegisterBodyType) {
 		try {
-			const verificationCode = await this.authRepository.findUniqueVerificationCode({
-				email: body.email,
-				code: body.code,
-				type: TypeOfVerificationCode.REGISTER,
-			})
+			await this.validateVerificationCode({ email: body.email, code: body.code, type: TypeOfVerificationCode.REGISTER })
 
-			if (!verificationCode) {
-				throw InvalidOTPException
-			}
-			if (verificationCode.expiresAt < new Date()) {
-				throw OTPExpiredException
-			}
 			const clientRoleId = await this.roleService.getRoleId()
 			const hashPassword = await this.hashingService.hash(body.password)
-			return await this.authRepository.createUser({
-				name: body.name,
-				email: body.email,
-				password: hashPassword,
-				roleId: clientRoleId,
-				phoneNumber: body.phoneNumber,
-			})
+			const [user] = await Promise.all([
+				this.authRepository.createUser({
+					name: body.name,
+					email: body.email,
+					password: hashPassword,
+					roleId: clientRoleId,
+					phoneNumber: body.phoneNumber,
+				}),
+				this.authRepository.deleteVerificationCode({
+					email: body.email,
+					code: body.code,
+					type: TypeOfVerificationCode.REGISTER,
+				}),
+			])
+			return user
 		} catch (error) {
 			console.log('error', error)
 			if (isUniqueConstraintPrismaError(error)) {
@@ -70,8 +99,11 @@ export class AuthService {
 		const user = await this.sharedUserRepository.findUnique({
 			email: body.email,
 		})
-		if (user) {
+		if (body.type === TypeOfVerificationCode.REGISTER && user) {
 			throw EmailAlreadyExistsException
+		}
+		if (body.type === TypeOfVerificationCode.FORGOT_PASSWORD && !user) {
+			throw EmailNotFoundException
 		}
 		// Tại mã OTP
 		const code = generateOTP()
@@ -82,6 +114,7 @@ export class AuthService {
 			code,
 			expiresAt,
 		})
+		console.log(verificationCode)
 		const { error } = await this.emailService.sendOTP({ email: body.email, code })
 		if (error) {
 			throw FailedToSendOTPException
@@ -113,7 +146,6 @@ export class AuthService {
 		const user = await this.authRepository.findUniqueIncludeRole({
 			email: body.email,
 		})
-		console.log(body.email)
 		if (!user) {
 			throw EmailAlreadyExistsException
 		}
@@ -180,6 +212,41 @@ export class AuthService {
 		})
 		return {
 			message: 'Logout successfully',
+		}
+	}
+
+	async forgotPassword(body: ForgotPasswordBodyType) {
+		const { email, newPassword, code } = body
+		// Kiem tra email co ton tai khong
+		const user = await this.sharedUserRepository.findUnique({
+			email,
+		})
+		if (!user) {
+			throw EmailNotFoundException
+		}
+		// Kiem tra ma OTP co ton tai khong
+		await this.validateVerificationCode({
+			email,
+			code,
+			type: TypeOfVerificationCode.FORGOT_PASSWORD,
+		})
+
+		const hashedPassword = await this.hashingService.hash(newPassword)
+		await Promise.all([
+			this.authRepository.updateUser(
+				{ email },
+				{
+					password: hashedPassword,
+				},
+			),
+			this.authRepository.deleteVerificationCode({
+				email,
+				code,
+				type: TypeOfVerificationCode.FORGOT_PASSWORD,
+			}),
+		])
+		return {
+			message: 'Change password successfully',
 		}
 	}
 }
