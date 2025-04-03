@@ -9,7 +9,7 @@ export class AuthRepository {
 	constructor(private readonly prismaService: PrismaService) {}
 
 	async createUser(
-		user: Omit<RegisterBodyType, 'confirmPassword' | 'code'> & Pick<UserType, 'roleId'>,
+		user: Pick<UserType, 'name' | 'email' | 'phoneNumber' | 'password' | 'roleId'>,
 	): Promise<Omit<UserType, 'password' | 'totpSecret'>> {
 		return await this.prismaService.user.create({
 			data: user,
@@ -19,10 +19,21 @@ export class AuthRepository {
 			},
 		})
 	}
+	async createUserIncludeRole(
+		user: Pick<UserType, 'name' | 'email' | 'phoneNumber' | 'password' | 'roleId' | 'avatar'>,
+	): Promise<UserType & { role: RoleType }> {
+		return await this.prismaService.user.create({
+			data: user,
+			include: {
+				role: true,
+			},
+		})
+	}
 
 	async createVerificationCode(
 		payload: Pick<VerifiCationCodeType, 'email' | 'code' | 'type' | 'expiresAt'>,
 	): Promise<VerifiCationCodeType> {
+		console.log('payload', payload)
 		return this.prismaService.verificationCode.upsert({
 			where: {
 				email: payload.email,

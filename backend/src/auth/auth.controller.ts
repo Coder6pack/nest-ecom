@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Ip, Post } from '@nestjs/common'
+import { Body, Controller, Get, Ip, Post, Query, Res } from '@nestjs/common'
 import { AuthService } from './auth.service'
 import {
 	GetAuthorizationResDTO,
@@ -16,6 +16,8 @@ import { ZodSerializerDto } from 'nestjs-zod'
 import { MessageResDTO } from 'src/shared/dtos/response.dto'
 import { IsPublic } from 'src/shared/decorators/auth.decorator'
 import { GoogleService } from './google.service'
+import { Response } from 'express'
+import envConfig from 'src/shared/config'
 
 @Controller('auth')
 export class AuthController {
@@ -33,7 +35,6 @@ export class AuthController {
 
 	@Post('otp')
 	@IsPublic()
-	@ZodSerializerDto(MessageResDTO)
 	sendOTP(@Body() body: SendOTPBodyDTO) {
 		return this.authService.sendOTP(body)
 	}
@@ -74,5 +75,19 @@ export class AuthController {
 			userAgent,
 			ip,
 		})
+	}
+
+	@Get('google/callback')
+	@IsPublic()
+	async googleCallback(@Query('code') code: string, @Query('state') state: string, @Res() res: Response) {
+		try {
+			const data = await this.googleService.googleCallback({ code, state })
+			return res.redirect(
+				`${envConfig.GOOGLE_OAUTH_REDIRECT_CLIENT}?accessToken=${data.accessToken}&refreshToken=${data.refreshToken}`,
+			)
+		} catch (error) {
+			const message = error instanceof Error ? error.message : 'Lỗi không xác định vui lòng thử lại bằng cách khác'
+			return res.redirect(`${envConfig.GOOGLE_OAUTH_REDIRECT_CLIENT}?errorMessage=${message}`)
+		}
 	}
 }

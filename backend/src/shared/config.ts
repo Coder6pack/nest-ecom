@@ -29,7 +29,7 @@ const configSchema = z.object({
 	RESEND_OTP_API_KEY_SECRET: z.string(),
 	GOOGLE_OAUTH_CLIENT_ID: z.string(),
 	GOOGLE_OAUTH_CLIENT_SECRET: z.string(),
-	GOOGLE_OATH_REDIRECT_URI: z.string(),
+	GOOGLE_OAUTH_REDIRECT_URI: z.string(),
 	GOOGLE_OAUTH_REDIRECT_CLIENT: z.string(),
 })
 const configServer = configSchema.safeParse(process.env)
