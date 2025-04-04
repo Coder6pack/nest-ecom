@@ -32,7 +32,12 @@ export const VerificationCodeSchema = z.object({
 	id: z.number().positive(),
 	email: z.string().email(),
 	code: z.string().length(50),
-	type: z.enum([TypeOfVerificationCode.REGISTER, TypeOfVerificationCode.FORGOT_PASSWORD]),
+	type: z.enum([
+		TypeOfVerificationCode.REGISTER,
+		TypeOfVerificationCode.FORGOT_PASSWORD,
+		TypeOfVerificationCode.LOGIN,
+		TypeOfVerificationCode.DISABLE_2FA,
+	]),
 	expiresAt: z.date(),
 	createdAt: z.date(),
 })
@@ -45,7 +50,12 @@ export const SendOTPBodySchema = VerificationCodeSchema.pick({
 export const LoginBodySchema = UserSchema.pick({
 	email: true,
 	password: true,
-}).strict()
+})
+	.extend({
+		totpCode: z.string().length(6).optional(), // 2FA code
+		code: z.string().length(6).optional(), // Email OTP code
+	})
+	.strict()
 
 export const LoginResSchema = z.object({
 	accessToken: z.string(),
@@ -107,6 +117,34 @@ export const ForgotPasswordBodySchema = z
 		}
 	})
 
+export const DisableTwoFactorBodySchema = z
+	.object({
+		totpCode: z.string().length(6).optional(), // 2FA code
+		code: z.string().length(6).optional(), // Email OTP code
+	})
+	.strict()
+	.superRefine(({ totpCode, code }, ctx) => {
+		const message = 'Error.RequireTotpCodeOrEmailCodeNotRequireTwo'
+		if (totpCode === 'undefine' && code === 'undefine') {
+			ctx.addIssue({
+				code: 'custom',
+				message,
+				path: ['totpCode'],
+			})
+			ctx.addIssue({
+				code: 'custom',
+				message,
+				path: ['code'],
+			})
+		}
+	})
+
+export const TwoFactorSetupResSchema = z.object({
+	secret: z.string(),
+	url: z.string(),
+})
+export type TowFactorSetupType = z.infer<typeof TwoFactorSetupResSchema>
+export type DisableTwoFactorBodyType = z.infer<typeof DisableTwoFactorBodySchema>
 export type ForgotPasswordBodyType = z.infer<typeof ForgotPasswordBodySchema>
 export const LogoutBodySchema = RefreshTokenBodySchema
 export const GetAuthorizationBodySchema = DeviceSchema.pick({

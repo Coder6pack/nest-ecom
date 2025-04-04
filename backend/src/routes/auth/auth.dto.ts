@@ -11,6 +11,8 @@ import {
 	SendOTPBodySchema,
 	VerificationCodeSchema,
 	ForgotPasswordBodySchema,
+	DisableTwoFactorBodySchema,
+	TwoFactorSetupResSchema,
 } from './auth.model'
 
 export class RegisterBodyDTO extends createZodDto(RegisterBodySchema) {}
@@ -24,3 +26,5 @@ export class RefreshTokenResDTO extends createZodDto(RefreshTokenResSchema) {}
 export class LogoutBodyDTO extends createZodDto(LogoutBodySchema) {}
 export class GetAuthorizationResDTO extends createZodDto(GetAuthorizationResSchema) {}
 export class ForgotPasswordBodyDTO extends createZodDto(ForgotPasswordBodySchema) {}
+export class DisableTwoFactorBodyDTO extends createZodDto(DisableTwoFactorBodySchema) {}
+export class TwoFactorSetupResDTO extends createZodDto(TwoFactorSetupResSchema) {}
