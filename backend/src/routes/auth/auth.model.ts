@@ -125,7 +125,8 @@ export const DisableTwoFactorBodySchema = z
 	.strict()
 	.superRefine(({ totpCode, code }, ctx) => {
 		const message = 'Error.RequireTotpCodeOrEmailCodeNotRequireTwo'
-		if (totpCode === 'undefine' && code === 'undefine') {
+		// Nếu cả 2 đều có hoặc không có giá trị thì sẽ nhảy vào if
+		if ((totpCode !== undefined) === (code !== undefined)) {
 			ctx.addIssue({
 				code: 'custom',
 				message,
@@ -141,7 +142,7 @@ export const DisableTwoFactorBodySchema = z
 
 export const TwoFactorSetupResSchema = z.object({
 	secret: z.string(),
-	url: z.string(),
+	uri: z.string(),
 })
 export type TowFactorSetupType = z.infer<typeof TwoFactorSetupResSchema>
 export type DisableTwoFactorBodyType = z.infer<typeof DisableTwoFactorBodySchema>
