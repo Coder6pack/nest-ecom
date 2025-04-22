@@ -9,7 +9,7 @@ import { AuthService } from './auth.service'
 import { TokenService } from 'src/shared/services/token.service'
 import { RoleService } from './role.service'
 import { v4 as uuidV4 } from 'uuid'
-import { GoogleUserInfoError } from './error.model'
+import { GoogleUserInfoError } from './auth.error'
 @Injectable()
 export class GoogleService {
 	private oauth2Client: OAuth2Client
