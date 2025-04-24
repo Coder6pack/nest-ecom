@@ -1,10 +1,48 @@
 import { Injectable } from '@nestjs/common'
 import { PrismaService } from 'src/shared/services/prisma.service'
-import { CreatePermissionBodyType, PermissionType } from './permission.model'
+import {
+	CreatePermissionBodyType,
+	GetPermissionQueryType,
+	GetPermissionsResType,
+	PermissionType,
+	UpdatePermissionBodyType,
+	UpdatePermissionResType,
+} from './permission.model'
 
 @Injectable()
 export class PermissionRepository {
 	constructor(private readonly prismaService: PrismaService) {}
+
+	// Get all permissions
+	async getList({ page, limit, skip }: GetPermissionQueryType & { skip: number }): Promise<GetPermissionsResType> {
+		const totalItem = await this.prismaService.permission.count({
+			where: {
+				deletedAt: null,
+			},
+		})
+		const data = await this.prismaService.permission.findMany({
+			where: {
+				deletedAt: null,
+			},
+			skip,
+			take: Number(limit),
+		})
+		return {
+			data,
+			totalItem,
+			page,
+			limit,
+		}
+	}
+
+	getDetail(id: number): Promise<PermissionType | null> {
+		return this.prismaService.permission.findUnique({
+			where: {
+				id,
+				deletedAt: null,
+			},
+		})
+	}
 
 	create({ data, userId }: { data: CreatePermissionBodyType; userId: number }): Promise<PermissionType> {
 		return this.prismaService.permission.create({
@@ -14,5 +52,45 @@ export class PermissionRepository {
 				updatedById: userId,
 			},
 		})
+	}
+
+	update({
+		userId,
+		id,
+		data,
+	}: {
+		userId: number
+		id: number
+		data: UpdatePermissionBodyType
+	}): Promise<UpdatePermissionResType> {
+		return this.prismaService.permission.update({
+			where: {
+				id,
+				deletedAt: null,
+			},
+			data: {
+				...data,
+				updatedById: userId,
+			},
+		})
+	}
+
+	delete({ id, isHard, userId }: { id: number; isHard?: boolean; userId: number }): Promise<PermissionType> {
+		return isHard
+			? this.prismaService.permission.delete({
+					where: {
+						id,
+					},
+				})
+			: this.prismaService.permission.update({
+					where: {
+						id,
+						deletedAt: null,
+					},
+					data: {
+						deletedAt: new Date(),
+						updatedById: userId,
+					},
+				})
 	}
 }

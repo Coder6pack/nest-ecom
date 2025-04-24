@@ -1,3 +1,4 @@
+import { permission } from 'process'
 import { HTTPMethod } from 'src/shared/constants/http.constant'
 import { z } from 'zod'
 
@@ -32,8 +33,8 @@ export const CreatePermissionBodySchema = PermissionSchema.pick({
 export const GetPermissionDetailResSchema = PermissionSchema
 
 export const GetPermissionQuerySchema = z.object({
-	page: z.number(),
-	limit: z.number(),
+	page: z.string().optional(),
+	limit: z.string().optional(),
 })
 
 export const GetPermissionsResSchema = GetPermissionQuerySchema.extend({
@@ -41,8 +42,18 @@ export const GetPermissionsResSchema = GetPermissionQuerySchema.extend({
 	totalItem: z.number(),
 })
 
+export const UpdatePermissionBodySchema = PermissionSchema.pick({
+	name: true,
+	description: true,
+	path: true,
+	method: true,
+}).strict()
+
+export const UpdatePermissionResSchema = PermissionSchema
+
+export type UpdatePermissionResType = PermissionType
+export type UpdatePermissionBodyType = z.infer<typeof UpdatePermissionBodySchema>
 export type GetPermissionsResType = z.infer<typeof GetPermissionsResSchema>
 export type GetPermissionQueryType = z.infer<typeof GetPermissionQuerySchema>
-export type GetPermissionResType = PermissionType
 export type CreatePermissionBodyType = z.infer<typeof CreatePermissionBodySchema>
 export type PermissionType = z.infer<typeof PermissionSchema>
