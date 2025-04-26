@@ -1,44 +1,68 @@
 import { Injectable } from '@nestjs/common'
 import { PermissionRepository } from './permission.repo'
 import { CreatePermissionBodyType, GetPermissionQueryType, UpdatePermissionBodyType } from './permission.model'
-import { NotFoundPermissionException } from './permission.error'
+import { NotFoundPermissionException, PermissionAlreadyExistsException } from './permission.error'
+import { NotFoundRecordException } from 'src/shared/error'
+import { isNotFoundPrismaError, isUniqueConstraintPrismaError } from 'src/shared/helpers'
 
 @Injectable()
 export class PermissionService {
 	constructor(private readonly permissionRepository: PermissionRepository) {}
 
 	// Get all permissions
-	getList({ page = '1', limit = '10' }: GetPermissionQueryType) {
-		const skip = (Number(page) - 1) * Number(limit)
-		return this.permissionRepository.getList({ page, limit, skip })
+	getList(pagination: GetPermissionQueryType) {
+		return this.permissionRepository.getList(pagination)
 	}
 
 	// Get detail
-	getDetail(id: string) {
-		return this.permissionRepository.getDetail(Number(id))
+	async getDetail(id: number) {
+		const permission = await this.permissionRepository.getDetail(id)
+		if (!permission) {
+			throw NotFoundRecordException
+		}
+		return permission
 	}
 
 	// Create permission
-	create({ data, userId }: { data: CreatePermissionBodyType; userId: number }) {
-		return this.permissionRepository.create({ data, userId })
+	async create({ data, userId }: { data: CreatePermissionBodyType; userId: number }) {
+		try {
+			return await this.permissionRepository.create({ data, userId })
+		} catch (error) {
+			if (isUniqueConstraintPrismaError(error)) {
+				throw PermissionAlreadyExistsException
+			}
+			throw error
+		}
 	}
 
 	// Update permission
-	update({ userId, id, data }: { userId: number; id: string; data: UpdatePermissionBodyType }) {
-		const permissionId = Number(id)
-		return this.permissionRepository.update({ userId, id: permissionId, data })
+	async update({ userId, id, data }: { userId: number; id: number; data: UpdatePermissionBodyType }) {
+		try {
+			const permission = await this.permissionRepository.update({ userId, id, data })
+			return permission
+		} catch (error) {
+			if (isNotFoundPrismaError(error)) {
+				throw NotFoundRecordException
+			}
+			if (isUniqueConstraintPrismaError(error)) {
+				throw PermissionAlreadyExistsException
+			}
+			throw error
+		}
 	}
 
 	// Delete permission
-	async delete({ id, userId }: { id: string; userId: number }) {
-		const permissionId = Number(id)
-		const permission = await this.permissionRepository.getDetail(permissionId)
-		if (!permission) {
-			throw NotFoundPermissionException
-		}
-		await this.permissionRepository.delete({ id: permissionId, userId, isHard: true })
-		return {
-			message: 'Delete permission successfully',
+	async delete({ id, userId }: { id: number; userId: number }) {
+		try {
+			await this.permissionRepository.delete({ id, userId })
+			return {
+				message: 'Delete permission successfully',
+			}
+		} catch (error) {
+			if (isNotFoundPrismaError(error)) {
+				throw NotFoundRecordException
+			}
+			throw error
 		}
 	}
 }

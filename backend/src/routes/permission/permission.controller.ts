@@ -3,6 +3,7 @@ import { PermissionService } from './permission.service'
 import {
 	CreatePermissionBodyDTO,
 	GetPermissionDetailResDTO,
+	GetPermissionParamsDTO,
 	GetPermissionQueryDTO,
 	GetPermissionsResDTO,
 	UpdatePermissionBodyDTO,
@@ -28,10 +29,10 @@ export class PermissionController {
 	}
 
 	// Get permission by ID
-	@Get(':id')
+	@Get(':permissionId')
 	@ZodSerializerDto(GetPermissionDetailResDTO)
-	getById(@Param('id') id: string) {
-		return this.permissionService.getDetail(id)
+	getById(@Param() param: GetPermissionParamsDTO) {
+		return this.permissionService.getDetail(param.permissionId)
 	}
 	// create permission
 	@Post('/create')
@@ -41,24 +42,24 @@ export class PermissionController {
 	}
 
 	// Update permission
-	@Put(':id')
+	@Put(':permissionId')
 	@ZodSerializerDto(UpdatePermissionResDTO)
 	updatePermission(
 		@Body() body: UpdatePermissionBodyDTO,
-		@Param('id') id: string,
+		@Param() param: GetPermissionParamsDTO,
 		@ActiveUser('userId') userId: number,
 	) {
 		return this.permissionService.update({
 			data: body,
 			userId,
-			id,
+			id: param.permissionId,
 		})
 	}
 
 	// Delete permission
-	@Delete(':id')
+	@Delete(':PermissionId')
 	@ZodSerializerDto(MessageResDTO)
-	deletePermission(@Param('id') id: string, @ActiveUser('userId') userId: number) {
-		return this.permissionService.delete({ id, userId })
+	deletePermission(@Param() param: GetPermissionParamsDTO, @ActiveUser('userId') userId: number) {
+		return this.permissionService.delete({ id: param.permissionId, userId })
 	}
 }

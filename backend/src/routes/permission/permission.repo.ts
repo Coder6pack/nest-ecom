@@ -14,24 +14,28 @@ export class PermissionRepository {
 	constructor(private readonly prismaService: PrismaService) {}
 
 	// Get all permissions
-	async getList({ page, limit, skip }: GetPermissionQueryType & { skip: number }): Promise<GetPermissionsResType> {
-		const totalItem = await this.prismaService.permission.count({
-			where: {
-				deletedAt: null,
-			},
-		})
-		const data = await this.prismaService.permission.findMany({
-			where: {
-				deletedAt: null,
-			},
-			skip,
-			take: Number(limit),
-		})
+	async getList({ page, limit }: GetPermissionQueryType): Promise<GetPermissionsResType> {
+		const skip = (page - 1) * limit
+		const [totalItem, data] = await Promise.all([
+			this.prismaService.permission.count({
+				where: {
+					deletedAt: null,
+				},
+			}),
+			this.prismaService.permission.findMany({
+				where: {
+					deletedAt: null,
+				},
+				skip,
+				take: limit,
+			}),
+		])
 		return {
 			data,
 			totalItem,
 			page,
 			limit,
+			totalPage: Math.ceil(totalItem / limit),
 		}
 	}
 
