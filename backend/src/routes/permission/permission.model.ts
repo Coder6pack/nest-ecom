@@ -1,25 +1,6 @@
-import { HTTPMethod } from 'src/shared/constants/http.constant'
+import { PaginationSchema } from 'src/shared/models/pagination.model'
+import { PermissionSchema, PermissionType } from 'src/shared/models/shared-permission'
 import { z } from 'zod'
-
-export const PermissionSchema = z.object({
-	id: z.number(),
-	name: z.string().max(500),
-	description: z.string(),
-	path: z.string().max(1000),
-	method: z.enum([
-		HTTPMethod.GET,
-		HTTPMethod.POST,
-		HTTPMethod.PUT,
-		HTTPMethod.DELETE,
-		HTTPMethod.PATCH,
-		HTTPMethod.HEAD,
-		HTTPMethod.OPTIONS,
-	]),
-	createdById: z.number().nullable(),
-	updatedById: z.number().nullable(),
-	createdAt: z.date(),
-	updatedAt: z.date(),
-})
 
 export const CreatePermissionBodySchema = PermissionSchema.pick({
 	name: true,
@@ -29,10 +10,7 @@ export const CreatePermissionBodySchema = PermissionSchema.pick({
 
 export const GetPermissionDetailResSchema = PermissionSchema
 
-export const GetPermissionQuerySchema = z.object({
-	page: z.coerce.number().int().positive().default(1),
-	limit: z.coerce.number().int().positive().default(10),
-})
+export const GetPermissionQuerySchema = PaginationSchema
 
 export const GetPermissionsResSchema = GetPermissionQuerySchema.extend({
 	data: z.array(PermissionSchema),
@@ -62,4 +40,3 @@ export type UpdatePermissionBodyType = z.infer<typeof UpdatePermissionBodySchema
 export type GetPermissionsResType = z.infer<typeof GetPermissionsResSchema>
 export type GetPermissionQueryType = z.infer<typeof GetPermissionQuerySchema>
 export type CreatePermissionBodyType = z.infer<typeof CreatePermissionBodySchema>
-export type PermissionType = z.infer<typeof PermissionSchema>

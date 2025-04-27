@@ -79,18 +79,6 @@ export const DeviceSchema = z.object({
 	isActive: z.boolean(),
 })
 
-export const RoleSchema = z.object({
-	id: z.number(),
-	name: z.string(),
-	description: z.string(),
-	isActive: z.boolean(),
-	createdById: z.number().nullable(),
-	updatedById: z.number().nullable(),
-	deletedAt: z.date().nullable(),
-	createdAt: z.date(),
-	updatedAt: z.date(),
-})
-
 export const RefreshTokenSchema = z.object({
 	token: z.string(),
 	userId: z.number(),
@@ -160,7 +148,6 @@ export type GetAuthorizationResType = z.infer<typeof GetAuthorizationResSchema>
 export type GetAuthorizationBodyType = z.infer<typeof GetAuthorizationBodySchema>
 export type LogoutBodyType = RefreshTokenBodyType
 export type RefreshTokenType = z.infer<typeof RefreshTokenSchema>
-export type RoleType = z.infer<typeof RoleSchema>
 export type DeviceType = z.infer<typeof DeviceSchema>
 export type LoginResType = z.infer<typeof LoginResSchema>
 export type RefreshTokenResType = LoginResType
