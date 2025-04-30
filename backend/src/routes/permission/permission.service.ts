@@ -54,7 +54,7 @@ export class PermissionService {
 	// Delete permission
 	async delete({ id, userId }: { id: number; userId: number }) {
 		try {
-			await this.permissionRepository.delete({ id, userId })
+			await this.permissionRepository.delete({ id, userId, isHard: true })
 			return {
 				message: 'Delete permission successfully',
 			}

@@ -6,6 +6,7 @@ export const CreatePermissionBodySchema = PermissionSchema.pick({
 	name: true,
 	path: true,
 	method: true,
+	module: true,
 }).strict()
 
 export const GetPermissionDetailResSchema = PermissionSchema
@@ -20,11 +21,7 @@ export const GetPermissionsResSchema = GetPermissionQuerySchema.extend({
 	totalPage: z.number(),
 })
 
-export const UpdatePermissionBodySchema = PermissionSchema.pick({
-	name: true,
-	path: true,
-	method: true,
-}).strict()
+export const UpdatePermissionBodySchema = CreatePermissionBodySchema
 
 export const UpdatePermissionResSchema = PermissionSchema
 

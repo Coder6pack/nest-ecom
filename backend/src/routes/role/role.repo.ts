@@ -10,6 +10,10 @@ import {
 	UpdateRoleBodyType,
 } from './role.model'
 import { RoleType } from 'src/shared/models/shared-role.model'
+import { permission } from 'process'
+import { NotFoundRecordException } from 'src/shared/error'
+import { RoleName } from 'src/shared/constants/role.constant'
+import { ProhibitedActionOnBaseRoleException } from './role.error'
 
 @Injectable()
 export class RoleRepository {
@@ -49,7 +53,11 @@ export class RoleRepository {
 				deletedAt: null,
 			},
 			include: {
-				permissions: true,
+				permissions: {
+					where: {
+						deletedAt: null,
+					},
+				},
 			},
 		})
 	}
@@ -73,27 +81,65 @@ export class RoleRepository {
 		id: number
 		userId: number
 	}): Promise<RoleWithPermissionsType> {
+		if (data.permissionIds.length > 0) {
+			const role = await this.prismaService.role.findUnique({
+				where: {
+					id,
+					deletedAt: null,
+				},
+			})
+			if (!role) {
+				throw NotFoundRecordException
+			}
+			if (role.name === RoleName.Admin) {
+				throw ProhibitedActionOnBaseRoleException
+			}
+			const permissions = await this.prismaService.permission.findMany({
+				where: {
+					id: { in: data.permissionIds },
+				},
+			})
+			if (permissions.length > 0) {
+				const deletedIds = permissions.map((permission) => permission.id).join(', ')
+				throw new Error(`Permission with id has been deleted: ${deletedIds}`)
+			}
+		}
 		return await this.prismaService.role.update({
 			where: {
 				id,
 				deletedAt: null,
 			},
 			data: {
-				name: data.name,
-				description: data.description,
-				isActive: data.isActive,
+				...data,
 				permissions: {
 					set: data.permissionIds.map((id) => ({ id })),
 				},
 				updatedById: userId,
 			},
 			include: {
-				permissions: true,
+				permissions: {
+					where: {
+						deletedAt: null,
+					},
+				},
 			},
 		})
 	}
 	// Delete role
 	async delete({ id, userId, isHard }: { id: number; userId: number; isHard?: boolean }): Promise<RoleType> {
+		const role = await this.prismaService.role.findUnique({
+			where: {
+				id,
+				deletedAt: null,
+			},
+		})
+		if (!role) {
+			throw NotFoundRecordException
+		}
+		const baseRoles: string[] = [RoleName.Admin, RoleName.Client, RoleName.Seller]
+		if (baseRoles.includes(role.name)) {
+			throw ProhibitedActionOnBaseRoleException
+		}
 		return isHard
 			? this.prismaService.role.delete({
 					where: {

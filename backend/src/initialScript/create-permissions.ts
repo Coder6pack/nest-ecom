@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core'
 import { AppModule } from 'src/app.module'
 import { HTTPMethod } from 'src/shared/constants/http.constant'
+import { RoleName } from 'src/shared/constants/role.constant'
 import { PrismaService } from 'src/shared/services/prisma.service'
 
 const prisma = new PrismaService()
@@ -15,19 +16,22 @@ async function bootstrap() {
 			deletedAt: null,
 		},
 	})
-	const availableRoutes: { path: string; method: keyof typeof HTTPMethod; name: string }[] = router.stack
-		.map((layer) => {
-			if (layer.route) {
-				const path = layer.route?.path
-				const method = String(layer.route?.stack[0].method).toUpperCase() as keyof typeof HTTPMethod
-				return {
-					path,
-					method,
-					name: method + ' ' + path,
+	const availableRoutes: { path: string; method: keyof typeof HTTPMethod; name: string; module: string }[] =
+		router.stack
+			.map((layer) => {
+				if (layer.route) {
+					const path = layer.route?.path
+					const method = String(layer.route?.stack[0].method).toUpperCase() as keyof typeof HTTPMethod
+					const moduleName = String(path.split('/')[1]).toUpperCase() // Lấy tên module từ đường dẫn
+					return {
+						path,
+						method,
+						name: method + ' ' + path,
+						module: moduleName,
+					}
 				}
-			}
-		})
-		.filter((item) => item !== undefined)
+			})
+			.filter((item) => item !== undefined)
 	// Tạo object permissionInDbMap với key là [method-path]
 	const permissionInDbMap: Record<string, (typeof permissionsInDb)[0]> = permissionsInDb.reduce((acc, item) => {
 		acc[`${item.method}-${item.path}`] = item
@@ -70,6 +74,32 @@ async function bootstrap() {
 	} else {
 		console.log('No permissions to add')
 	}
+
+	// Lấy lại permissions từ database sau khi đã thêm mới
+	const updatePermissionInDb = await prisma.permission.findMany({
+		where: {
+			deletedAt: null,
+		},
+	})
+
+	const admin = await prisma.role.findFirstOrThrow({
+		where: {
+			name: RoleName.Admin,
+			deletedAt: null,
+		},
+	})
+
+	await prisma.role.update({
+		where: {
+			id: admin.id,
+			deletedAt: null,
+		},
+		data: {
+			permissions: {
+				set: updatePermissionInDb.map((item) => ({ id: item.id })),
+			},
+		},
+	})
 
 	process.exit(0)
 }
