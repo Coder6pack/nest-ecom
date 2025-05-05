@@ -25,7 +25,6 @@ import {
 	EmailNotFoundException,
 	FailedToSendOTPException,
 	InvalidOTPException,
-	InvalidPasswordException,
 	InvalidTOTPAndCodeException,
 	InvalidTOTPException,
 	OTPExpiredException,
@@ -35,6 +34,7 @@ import {
 	UnauthorizedAccessException,
 } from './auth.error'
 import { TwoFactorService } from 'src/shared/services/two-factor-auth.service'
+import { InvalidPasswordException } from 'src/shared/error'
 
 @Injectable()
 export class AuthService {
@@ -109,6 +109,7 @@ export class AuthService {
 		// Kiểm tra xem user đã tồn tại hay chưa
 		const user = await this.sharedUserRepository.findUnique({
 			email: body.email,
+			deletedAt: null,
 		})
 		if (body.type === TypeOfVerificationCode.REGISTER && user) {
 			throw EmailAlreadyExistsException
@@ -156,6 +157,7 @@ export class AuthService {
 		// Verify user in database
 		const user = await this.authRepository.findUniqueIncludeRole({
 			email: body.email,
+			deletedAt: null,
 		})
 		if (!user) {
 			throw EmailAlreadyExistsException
@@ -208,7 +210,7 @@ export class AuthService {
 			// Decode the refresh token
 			const { userId } = await this.tokenService.verifyRefreshToken(refreshToken)
 			// Check refreshToken in database
-			const refreshTokenInDb = await this.authRepository.findUniqueRefreshTokenINcludeUserRole(refreshToken)
+			const refreshTokenInDb = await this.authRepository.findUniqueRefreshTokenINcludeUserRole({ token: refreshToken })
 			if (!refreshTokenInDb) {
 				throw RefreshTokenAlreadyUsedException
 			}
@@ -222,7 +224,7 @@ export class AuthService {
 			// Update device
 			const $updateDevice = this.authRepository.updateDevice(deviceId, { userAgent, ip })
 			// Delete the refresh token from the database
-			const $deleteRefreshToken = this.authRepository.deleteRefreshToken(refreshToken)
+			const $deleteRefreshToken = this.authRepository.deleteRefreshToken({ token: refreshToken })
 			// Generate new access and refresh tokens
 			const $generateToken = this.generateTokens({ userId, deviceId, roleId, roleName })
 
@@ -242,7 +244,7 @@ export class AuthService {
 		// Check refreshToken is verify?
 		await this.tokenService.verifyRefreshToken(refreshToken)
 		// Delete refreshToken
-		const { deviceId } = await this.authRepository.deleteRefreshToken(refreshToken)
+		const { deviceId } = await this.authRepository.deleteRefreshToken({ token: refreshToken })
 		// Update device
 		await this.authRepository.updateDevice(deviceId, {
 			isActive: false,
@@ -257,6 +259,7 @@ export class AuthService {
 		// Kiem tra email co ton tai khong
 		const user = await this.sharedUserRepository.findUnique({
 			email,
+			deletedAt: null,
 		})
 		if (!user) {
 			throw EmailNotFoundException
@@ -270,10 +273,11 @@ export class AuthService {
 
 		const hashedPassword = await this.hashingService.hash(newPassword)
 		await Promise.all([
-			this.authRepository.updateUser(
-				{ email },
+			this.sharedUserRepository.update(
+				{ email, deletedAt: null },
 				{
 					password: hashedPassword,
+					updatedById: user.id,
 				},
 			),
 			this.authRepository.deleteVerificationCode({
@@ -301,7 +305,7 @@ export class AuthService {
 		// 2. Tạo secret và uri
 		const { secret, uri } = await this.twoFactorService.generateOTP(user.email)
 		// 3. Cập nhật secret vào cơ sở dữ liệu
-		await this.authRepository.updateUser({ id: userId }, { totpSecret: secret })
+		await this.sharedUserRepository.update({ id: userId, deletedAt: null }, { totpSecret: secret, updatedById: userId })
 		// 4. Trả secret và uri về cho người dùng
 		console.log('secret', secret)
 		console.log('uri', uri)
@@ -314,7 +318,7 @@ export class AuthService {
 	async disableTwoFactorAuth(data: DisableTwoFactorBodyType & { userId: number }) {
 		const { userId, totpCode, code } = data
 		// 1. Kiểm tra xem người dùng có tồn tại hay chưa, đã bật 2FA hay chưa
-		const user = await this.sharedUserRepository.findUnique({ id: userId })
+		const user = await this.sharedUserRepository.findUnique({ id: userId, deletedAt: null })
 		if (!user) {
 			throw EmailNotFoundException
 		}
@@ -339,7 +343,7 @@ export class AuthService {
 			})
 		}
 		// 3. Cập nhật totpSecret vào cơ sở dữ liệu thành null
-		await this.authRepository.updateUser({ id: userId }, { totpSecret: null })
+		await this.sharedUserRepository.update({ id: userId, deletedAt: null }, { totpSecret: null })
 		// 4. Trả về thông báo tắt 2fa thành công
 		return {
 			message: 'Disable 2FA successfully',
