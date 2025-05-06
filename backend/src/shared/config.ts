@@ -32,6 +32,7 @@ const configSchema = z.object({
 	GOOGLE_OAUTH_REDIRECT_URI: z.string(),
 	GOOGLE_OAUTH_REDIRECT_CLIENT: z.string(),
 	APP_NAME: z.string(),
+	PREFIX_STATIC_ENDPOINT: z.string(),
 })
 const configServer = configSchema.safeParse(process.env)
 
