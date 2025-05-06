@@ -10,8 +10,17 @@ import { AuthenticationGuard } from './guards/authentication.guard'
 import { SharedUserRepository } from './repositories/shared-user.repo'
 import { EmailService } from './services/email.service'
 import { TwoFactorService } from './services/two-factor-auth.service'
+import { SharedRoleRepository } from './repositories/shared-role.repo'
 
-const shareService = [PrismaService, HashingService, TokenService, SharedUserRepository, EmailService, TwoFactorService]
+const shareService = [
+	PrismaService,
+	HashingService,
+	TokenService,
+	SharedUserRepository,
+	EmailService,
+	TwoFactorService,
+	SharedRoleRepository,
+]
 
 @Global()
 @Module({

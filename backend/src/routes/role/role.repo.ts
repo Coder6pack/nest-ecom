@@ -3,14 +3,12 @@ import { PrismaService } from 'src/shared/services/prisma.service'
 import {
 	CreateRoleBodyType,
 	CreateRoleResType,
-	GetRoleDetailResType,
 	GetRoleQueryType,
 	GetRolesResType,
 	RoleWithPermissionsType,
 	UpdateRoleBodyType,
 } from './role.model'
 import { RoleType } from 'src/shared/models/shared-role.model'
-import { permission } from 'process'
 import { NotFoundRecordException } from 'src/shared/error'
 import { RoleName } from 'src/shared/constants/role.constant'
 import { ProhibitedActionOnBaseRoleException } from './role.error'
