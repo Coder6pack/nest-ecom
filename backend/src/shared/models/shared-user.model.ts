@@ -15,6 +15,7 @@ export const UserSchema = z.object({
 	roleId: z.number().positive(),
 	createdById: z.number().nullable(),
 	updatedById: z.number().nullable(),
+	deletedById: z.number().nullable(),
 	deletedAt: z.date().nullable(),
 	createdAt: z.date(),
 	updatedAt: z.date(),
@@ -41,7 +42,7 @@ export const GetUserProfileResSchema = UserSchema.omit({
 	}),
 })
 
-export const UpdateUserProfileResSchema = UserSchema.pick({
+export const UpdateUserProfileResSchema = UserSchema.omit({
 	password: true,
 	totpSecret: true,
 })
