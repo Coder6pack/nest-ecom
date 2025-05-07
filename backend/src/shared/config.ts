@@ -33,6 +33,11 @@ const configSchema = z.object({
 	GOOGLE_OAUTH_REDIRECT_CLIENT: z.string(),
 	APP_NAME: z.string(),
 	PREFIX_STATIC_ENDPOINT: z.string(),
+	S3_BUCKET_NAME: z.string(),
+	S3_REGION: z.string(),
+	S3_ACCESS_KEY: z.string(),
+	S3_SECRET_KEY: z.string(),
+	S3_ENDPOINT: z.string(),
 })
 const configServer = configSchema.safeParse(process.env)
 
