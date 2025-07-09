@@ -13,8 +13,8 @@ createRoot(document.getElementById("root")!).render(
       <Route element={<Layout />}>
         <Route index element={<Home />} />
         <Route path="login" element={<Login />} />
-        <Route path="upload" element={<UploadPage />} />
         <Route path="oauth-google-callback" element={<Oauth />} />
+        <Route path="upload" element={<UploadPage />} />
       </Route>
     </Routes>
   </BrowserRouter>

@@ -79,6 +79,9 @@ export class AuthRepository {
 	}
 
 	async createRefreshToken(data: Omit<RefreshTokenType, 'createdAt'>): Promise<RefreshTokenType> {
+		await this.prismaService.brand.findFirst({
+			where: {},
+		})
 		return this.prismaService.refreshToken.create({
 			data,
 		})
